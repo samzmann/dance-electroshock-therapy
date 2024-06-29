@@ -1,16 +1,16 @@
 #ifndef POSITION_H
 #define POSITION_H
 
-#include <string>
-
 class Position
+
 {
 public:
     Position(
         int armLeft,
         int armRight,
         int legLeft,
-        int legRight) : armLeft(armLeft), armRight(armRight), legLeft(legLeft), legRight(legRight)
+        int legRight,
+        char *label, char *stickFigure) : armLeft(armLeft), armRight(armRight), legLeft(legLeft), legRight(legRight), label(*label)
     {
         coords[0] = &this->armLeft;
         coords[1] = &this->armRight;
@@ -23,6 +23,8 @@ public:
     int &legLeft;
     int &legRight;
     int *coords[4];
+    char label;
+    char stickFigure;
 };
 
 #endif // POSITION_H
