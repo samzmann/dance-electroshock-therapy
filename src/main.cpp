@@ -16,6 +16,9 @@
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
+
+#include <Servo.h>
+
 #include "BeatDetector.h"
 #include "BpmCalculator.h"
 #include "Position.h"
@@ -43,6 +46,8 @@ LimbControl limbControls[NUM_LIMBS] = {
     LimbControl("Left leg"),
     LimbControl("Right leg")};
 
+Servo servos[NUM_LIMBS];
+
 void setup()
 {
   // Audio connections require memory to work.  For more
@@ -61,6 +66,11 @@ void setup()
 
   // Initialize BeatDetector
   beatDetector.enableSerialBeatDisplay = false;
+
+  servos[0].attach(24);
+  servos[1].attach(25);
+  servos[2].attach(26);
+  servos[3].attach(27);
 }
 
 const char *stickFigures[] = {
@@ -112,17 +122,20 @@ void loop()
     Serial.print("BPM: ");
     Serial.println(bpm);
 
-    bool position[4];
-    for (int i = 0; i < 4; ++i)
+    bool position[NUM_LIMBS];
+    for (int i = 0; i < NUM_LIMBS; ++i)
     {
       position[i] = random(0, 2); // random(0, 2) generates either 0 or 1, which can be interpreted as false or true
     }
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < NUM_LIMBS; ++i)
     {
       if (position[i])
       {
         limbControls[i].activate();
+        servos[i].write(90);
+        delay(100);
+        servos[i].write(0);
       }
     }
   }
