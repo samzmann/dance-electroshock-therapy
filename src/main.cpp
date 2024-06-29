@@ -17,24 +17,21 @@
 #include <SD.h>
 #include <SerialFlash.h>
 #include "BeatDetector.h"
-
-const int myInput = AUDIO_INPUT_MIC;
+#include "BpmDetector.h"
 
 // Create the Audio components.  These should be created in the
 // order data flows, inputs/sources -> processing -> outputs
 //
-AudioInputI2S audioInput; // audio shield: mic or line-in
+AudioInputI2S audioInput;
 AudioSynthWaveformSine sinewave;
 AudioAnalyzeFFT256 myFFT;
 // AudioAnalyzeFFT1024 myFFT;
-AudioOutputI2S audioOutput; // audio shield: headphones & line-out
-
-// Connect to the live input
+AudioOutputI2S audioOutput;
 AudioConnection patchCord1(audioInput, 0, myFFT, 0);
-
 AudioControlSGTL5000 audioShield;
 
 BeatDetector beatDetector(myFFT);
+BpmDetector bpmDetector(8);
 
 void setup()
 {
@@ -44,9 +41,9 @@ void setup()
 
   // Enable the audio shield and set the output volume.
   audioShield.enable();
-  audioShield.inputSelect(myInput);
+  audioShield.inputSelect(AUDIO_INPUT_MIC);
   audioShield.volume(0.5);
-  audioShield.micGain(30);
+  audioShield.micGain(40);
 
   // Configure the window algorithm to use
   myFFT.windowFunction(AudioWindowHanning1024);
@@ -58,11 +55,16 @@ void setup()
 
 void loop()
 {
-
   beatDetector.BeatDetectorLoop();
 
-  if (beatDetector.lowBeat) // Beat has been detected
+  if (beatDetector.highBeat) // Beat has been detected
   {
-    Serial.println("Low frequency beat detected!");
+    Serial.println("--- BEAT ---");
+
+    bpmDetector.addBeat(millis());
+
+    float bpm = bpmDetector.calculateBPM();
+    Serial.print("BPM: ");
+    Serial.println(bpm);
   }
 }
