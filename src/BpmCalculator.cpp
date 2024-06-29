@@ -1,13 +1,13 @@
-#include "BpmDetector.h"
+#include "BpmCalculator.h"
 #include <Arduino.h>
 
-BpmDetector::BpmDetector(int historyLength) : beatHistoryLength(historyLength)
+BpmCalculator::BpmCalculator(int historyLength) : beatHistoryLength(historyLength)
 {
     // This line dynamically allocates an array of unsigned long integers with a size of beatHistoryLength and initializes all elements to zero.
     beatTimes = new unsigned long[beatHistoryLength]();
 }
 
-void BpmDetector::addBeat(unsigned long timestamp)
+void BpmCalculator::addBeat(unsigned long timestamp)
 {
     // Shift the beatTimes array to the left
     for (int i = 0; i < beatHistoryLength - 1; i++)
@@ -19,7 +19,7 @@ void BpmDetector::addBeat(unsigned long timestamp)
     beatTimes[beatHistoryLength - 1] = timestamp;
 }
 
-float BpmDetector::calculateBPM()
+float BpmCalculator::calculateBPM()
 {
     if (beatTimes[1] == 0)
         return 0.0; // Not enough data to calculate BPM

@@ -17,7 +17,7 @@
 #include <SD.h>
 #include <SerialFlash.h>
 #include "BeatDetector.h"
-#include "BpmDetector.h"
+#include "BpmCalculator.h"
 
 // Create the Audio components.  These should be created in the
 // order data flows, inputs/sources -> processing -> outputs
@@ -31,7 +31,7 @@ AudioConnection patchCord1(audioInput, 0, myFFT, 0);
 AudioControlSGTL5000 audioShield;
 
 BeatDetector beatDetector(myFFT);
-BpmDetector bpmDetector(8);
+BpmCalculator bpmCalculator(8);
 
 void setup()
 {
@@ -61,9 +61,9 @@ void loop()
   {
     Serial.println("--- BEAT ---");
 
-    bpmDetector.addBeat(millis());
+    bpmCalculator.addBeat(millis());
 
-    float bpm = bpmDetector.calculateBPM();
+    float bpm = bpmCalculator.calculateBPM();
     Serial.print("BPM: ");
     Serial.println(bpm);
   }

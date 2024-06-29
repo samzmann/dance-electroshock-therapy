@@ -1,10 +1,10 @@
-#ifndef BPMDETECTOR_H
-#define BPMDETECTOR_H
+#ifndef BPMCALCULATOR_H
+#define BPMCALCULATOR_H
 
-class BpmDetector
+class BpmCalculator
 {
 public:
-    BpmDetector(int historyLength);
+    BpmCalculator(int historyLength);
     void addBeat(unsigned long timestamp);
     float calculateBPM();
 
@@ -13,4 +13,4 @@ private:
     unsigned long *beatTimes;
 };
 
-#endif // BPMDETECTOR_H
+#endif // BPMCALCULATOR_H
