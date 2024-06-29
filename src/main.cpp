@@ -18,6 +18,7 @@
 #include <SerialFlash.h>
 #include "BeatDetector.h"
 #include "BpmCalculator.h"
+#include "Position.h"
 
 // Create the Audio components.  These should be created in the
 // order data flows, inputs/sources -> processing -> outputs
@@ -53,6 +54,24 @@ void setup()
   beatDetector.enableSerialBeatDisplay = false;
 }
 
+Position positions[] = {
+    Position(0, 0, 0, 0),
+    Position(1, 0, 0, 0),
+    Position(0, 1, 0, 0),
+    Position(1, 1, 0, 0),
+    Position(0, 0, 1, 0),
+    Position(0, 0, 0, 1),
+    Position(0, 0, 1, 1),
+    Position(1, 0, 1, 0),
+    Position(0, 1, 0, 1),
+    Position(0, 1, 1, 0),
+    Position(1, 0, 0, 1),
+    Position(1, 1, 1, 0),
+    Position(1, 1, 0, 1),
+    Position(1, 0, 1, 1),
+    Position(0, 1, 1, 1),
+    Position(1, 1, 1, 1)};
+
 void loop()
 {
   beatDetector.BeatDetectorLoop();
@@ -66,5 +85,36 @@ void loop()
     float bpm = bpmCalculator.calculateBPM();
     Serial.print("BPM: ");
     Serial.println(bpm);
+
+    Serial.println("Move");
+
+    int position[4];
+    for (int i = 0; i < 4; i++)
+    {
+      position[i] = random(2); // Generates either 0 or 1
+    }
+
+    Serial.print("Position: ");
+    Serial.print("ArmLeft: ");
+    Serial.print(position[0]);
+    Serial.print(", ArmRight: ");
+    Serial.print(position[1]);
+    Serial.print(", LegLeft: ");
+    Serial.print(position[2]);
+    Serial.print(", LegRight: ");
+    Serial.println(position[3]);
+
+    for (int i = 0; i < sizeof(positions) / sizeof(positions[0]); i++)
+    {
+      if (positions[i].armLeft == position[0] &&
+          positions[i].armRight == position[1] &&
+          positions[i].legLeft == position[2] &&
+          positions[i].legRight == position[3])
+      {
+        Serial.print("Position index: ");
+        Serial.println(i);
+        break;
+      }
+    }
   }
 }
