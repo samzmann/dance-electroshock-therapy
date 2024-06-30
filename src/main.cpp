@@ -17,6 +17,7 @@
 #include <SD.h>
 #include <SerialFlash.h>
 #include <FastLED.h>
+#include <Ramp.h>
 
 #include "BeatDetector.h"
 #include "BpmCalculator.h"
@@ -48,6 +49,7 @@ ServoControl servoControls[NUM_LIMBS] = {
 
 #define NUM_LEDS 10
 CRGB leds[NUM_LEDS];
+rampByte ledRamp;
 
 void setup()
 {
@@ -76,6 +78,8 @@ void setup()
   FastLED.addLeds<NEOPIXEL, 28>(leds, NUM_LEDS);
   FastLED.setBrightness(255);
   FastLED.clearData();
+
+  ledRamp.go(0, 0, LINEAR, ONCEFORWARD);
 }
 
 const char *stickFigures[] = {
@@ -101,6 +105,8 @@ const int BPM_INTERVAL_MS = 60000 / BPM;
 
 int_least32_t lastBpmTimestamp = millis();
 
+bool isLedOn = false;
+
 void loop()
 {
 
@@ -117,18 +123,13 @@ void loop()
     lastBpmTimestamp = millis();
   }
 
-  if (now > lastBpmTimestamp + (BPM_INTERVAL_MS / 2))
-  {
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    FastLED.show();
-  }
-
   if (beatDetected)
   {
     Serial.println("--- BEAT ---");
 
-    fill_solid(leds, NUM_LEDS, CRGB::Red);
-    FastLED.show();
+    Serial.println("start fade in");
+    ledRamp.go(255, 20, QUADRATIC_IN, ONCEFORWARD);
+    isLedOn = true;
 
     bpmCalculator.addBeat(millis());
 
@@ -154,4 +155,21 @@ void loop()
       }
     }
   }
+
+  if (now > lastBpmTimestamp + 20 && isLedOn == true)
+  {
+    float bpm = bpmCalculator.calculateBPM();
+
+    Serial.println("start fade out");
+    ledRamp.go(0, 60000 / bpm, QUADRATIC_OUT, ONCEFORWARD);
+    isLedOn = false;
+  }
+
+  // Update the LED ramp value
+  uint8_t brightness = ledRamp.update();
+
+  // Set the LED brightness
+  fill_solid(leds, NUM_LEDS, CRGB::Red);
+  FastLED.setBrightness(brightness);
+  FastLED.show();
 }
