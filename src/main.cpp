@@ -16,6 +16,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <SerialFlash.h>
+#include <FastLED.h>
 
 #include "BeatDetector.h"
 #include "BpmCalculator.h"
@@ -45,6 +46,9 @@ ServoControl servoControls[NUM_LIMBS] = {
     ServoControl(27, 0, 90),
 };
 
+#define NUM_LEDS 10
+CRGB leds[NUM_LEDS];
+
 void setup()
 {
   // Audio connections require memory to work.  For more
@@ -68,6 +72,10 @@ void setup()
   {
     servoControls[i].initialize();
   }
+
+  FastLED.addLeds<NEOPIXEL, 28>(leds, NUM_LEDS);
+  FastLED.setBrightness(255);
+  FastLED.clearData();
 }
 
 const char *stickFigures[] = {
@@ -109,9 +117,18 @@ void loop()
     lastBpmTimestamp = millis();
   }
 
+  if (now > lastBpmTimestamp + (BPM_INTERVAL_MS / 2))
+  {
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    FastLED.show();
+  }
+
   if (beatDetected)
   {
     Serial.println("--- BEAT ---");
+
+    fill_solid(leds, NUM_LEDS, CRGB::Red);
+    FastLED.show();
 
     bpmCalculator.addBeat(millis());
 
