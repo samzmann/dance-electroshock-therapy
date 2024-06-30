@@ -24,9 +24,15 @@
 #include "Position.h"
 #include "ServoControl.h"
 
-// Create the Audio components.  These should be created in the
-// order data flows, inputs/sources -> processing -> outputs
-//
+// Constants and Macros
+#define NUM_LIMBS 4
+#define NUM_LEDS 10
+#define BPM 120
+const int BPM_INTERVAL_MS = 60000 / BPM;
+
+#define LED_FADE_IN_MS 20
+
+// Audio components
 AudioInputI2S audioInput;
 AudioSynthWaveformSine sinewave;
 AudioAnalyzeFFT256 myFFT;
@@ -35,11 +41,11 @@ AudioOutputI2S audioOutput;
 AudioConnection patchCord1(audioInput, 0, myFFT, 0);
 AudioControlSGTL5000 audioShield;
 
+// Beat detection and BPM calculation
 BeatDetector beatDetector(myFFT);
 BpmCalculator bpmCalculator(8);
 
-#define NUM_LIMBS 4
-
+// Servo controls
 ServoControl servoControls[NUM_LIMBS] = {
     ServoControl(24, 0, 90),
     ServoControl(25, 0, 90),
@@ -47,41 +53,11 @@ ServoControl servoControls[NUM_LIMBS] = {
     ServoControl(27, 0, 90),
 };
 
-#define NUM_LEDS 10
+// LED control
 CRGB leds[NUM_LEDS];
-rampByte ledRamp;
+rampByte ledBrightness;
 
-void setup()
-{
-  // Audio connections require memory to work.  For more
-  // detailed information, see the MemoryAndCpuUsage example
-  AudioMemory(12);
-
-  // Enable the audio shield and set the output volume.
-  audioShield.enable();
-  audioShield.inputSelect(AUDIO_INPUT_MIC);
-  audioShield.volume(0.5);
-  audioShield.micGain(40);
-
-  // Configure the window algorithm to use
-  myFFT.windowFunction(AudioWindowHanning1024);
-  // myFFT.windowFunction(NULL);
-
-  // Initialize BeatDetector
-  beatDetector.enableSerialBeatDisplay = false;
-
-  for (int i = 0; i < NUM_LIMBS; ++i)
-  {
-    servoControls[i].initialize();
-  }
-
-  FastLED.addLeds<NEOPIXEL, 28>(leds, NUM_LEDS);
-  FastLED.setBrightness(255);
-  FastLED.clearData();
-
-  ledRamp.go(0, 0, LINEAR, ONCEFORWARD);
-}
-
+// Stick figures for display
 const char *stickFigures[] = {
     " o\n/|\\\n/ \\",
     " o/\n/|\n/ \\",
@@ -100,43 +76,71 @@ const char *stickFigures[] = {
     "\\o\n |\\\n< >",
     "\\o/\n |\n< >"};
 
-#define BPM 120
-const int BPM_INTERVAL_MS = 60000 / BPM;
-
-int_least32_t lastBpmTimestamp = millis();
-
+// Timing and state variables
+int_least32_t lastBeatTimestamp = millis();
 bool isLedOn = false;
+
+void setup()
+{
+  // Initialize audio memory
+  AudioMemory(12);
+
+  // Enable the audio shield and set the input and volume
+  audioShield.enable();
+  audioShield.inputSelect(AUDIO_INPUT_MIC);
+  audioShield.volume(0.5);
+  audioShield.micGain(40);
+  // Configure FFT window function
+  myFFT.windowFunction(AudioWindowHanning1024);
+  // myFFT.windowFunction(NULL);
+
+  // Initialize BeatDetector
+  beatDetector.enableSerialBeatDisplay = false;
+
+  // Initialize servo controls
+  for (int i = 0; i < NUM_LIMBS; ++i)
+  {
+    servoControls[i].initialize();
+  }
+
+  // Initialize LEDs
+  FastLED.addLeds<NEOPIXEL, 28>(leds, NUM_LEDS);
+  FastLED.setBrightness(255);
+  FastLED.clearData();
+
+  // Initialize LED ramp
+  ledBrightness.go(0, 0, LINEAR, ONCEFORWARD);
+}
 
 void loop()
 {
-
   beatDetector.BeatDetectorLoop();
 
-  // bool beatDetected = beatDetector.highBeat;
-  bool beatDetected = false;
-
+  bool beatDetected = beatDetector.highBeat;
+  // bool beatDetected = false;
   int_least32_t now = millis();
 
-  if (now > lastBpmTimestamp + BPM_INTERVAL_MS)
-  {
-    beatDetected = true;
-    lastBpmTimestamp = millis();
-  }
+  // Check for beat based on BPM interval
+  // if (now > lastBeatTimestamp + BPM_INTERVAL_MS)
+  // {
+  //   beatDetected = true;
+  //   lastBeatTimestamp = millis();
+  // }
 
   if (beatDetected)
   {
     Serial.println("--- BEAT ---");
-
     Serial.println("start fade in");
-    ledRamp.go(255, 20, QUADRATIC_IN, ONCEFORWARD);
+    ledBrightness.go(255, LED_FADE_IN_MS, QUADRATIC_IN, ONCEFORWARD);
     isLedOn = true;
+    lastBeatTimestamp = millis();
 
     bpmCalculator.addBeat(millis());
-
     float bpm = bpmCalculator.calculateBPM();
     Serial.print("BPM: ");
     Serial.println(bpm);
 
+    // Randomly activate or deactivate servos
     bool position[NUM_LIMBS];
     for (int i = 0; i < NUM_LIMBS; ++i)
     {
@@ -156,19 +160,17 @@ void loop()
     }
   }
 
-  if (now > lastBpmTimestamp + 20 && isLedOn == true)
+  // Fade out LEDs after a short delay
+  if (now > lastBeatTimestamp + LED_FADE_IN_MS && isLedOn)
   {
     float bpm = bpmCalculator.calculateBPM();
-
     Serial.println("start fade out");
-    ledRamp.go(0, 60000 / bpm, QUADRATIC_OUT, ONCEFORWARD);
+    ledBrightness.go(0, (60000 / bpm) - LED_FADE_IN_MS, QUADRATIC_OUT, ONCEFORWARD);
     isLedOn = false;
   }
 
-  // Update the LED ramp value
-  uint8_t brightness = ledRamp.update();
-
-  // Set the LED brightness
+  // Update the LED ramp value and set LED brightness
+  uint8_t brightness = ledBrightness.update();
   fill_solid(leds, NUM_LEDS, CRGB::Red);
   FastLED.setBrightness(brightness);
   FastLED.show();
