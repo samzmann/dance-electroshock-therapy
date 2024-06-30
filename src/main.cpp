@@ -17,12 +17,10 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
-#include <Servo.h>
-
 #include "BeatDetector.h"
 #include "BpmCalculator.h"
 #include "Position.h"
-#include "LimbControl.h"
+#include "ServoControl.h"
 
 // Create the Audio components.  These should be created in the
 // order data flows, inputs/sources -> processing -> outputs
@@ -40,13 +38,12 @@ BpmCalculator bpmCalculator(8);
 
 #define NUM_LIMBS 4
 
-LimbControl limbControls[NUM_LIMBS] = {
-    LimbControl("Left arm"),
-    LimbControl("Right arm"),
-    LimbControl("Left leg"),
-    LimbControl("Right leg")};
-
-Servo servos[NUM_LIMBS];
+ServoControl servoControls[NUM_LIMBS] = {
+    ServoControl(24, 0, 90),
+    ServoControl(25, 0, 90),
+    ServoControl(26, 0, 90),
+    ServoControl(27, 0, 90),
+};
 
 void setup()
 {
@@ -67,10 +64,10 @@ void setup()
   // Initialize BeatDetector
   beatDetector.enableSerialBeatDisplay = false;
 
-  servos[0].attach(24);
-  servos[1].attach(25);
-  servos[2].attach(26);
-  servos[3].attach(27);
+  for (int i = 0; i < NUM_LIMBS; ++i)
+  {
+    servoControls[i].initialize();
+  }
 }
 
 const char *stickFigures[] = {
@@ -91,7 +88,7 @@ const char *stickFigures[] = {
     "\\o\n |\\\n< >",
     "\\o/\n |\n< >"};
 
-#define BPM 60
+#define BPM 120
 const int BPM_INTERVAL_MS = 60000 / BPM;
 
 int_least32_t lastBpmTimestamp = millis();
@@ -125,17 +122,18 @@ void loop()
     bool position[NUM_LIMBS];
     for (int i = 0; i < NUM_LIMBS; ++i)
     {
-      position[i] = random(0, 2); // random(0, 2) generates either 0 or 1, which can be interpreted as false or true
+      position[i] = random(0, 2);
     }
 
     for (int i = 0; i < NUM_LIMBS; ++i)
     {
       if (position[i])
       {
-        limbControls[i].activate();
-        servos[i].write(90);
-        delay(100);
-        servos[i].write(0);
+        servoControls[i].activate();
+      }
+      else
+      {
+        servoControls[i].deactivate();
       }
     }
   }
