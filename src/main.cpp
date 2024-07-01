@@ -47,10 +47,10 @@ BpmCalculator bpmCalculator(8);
 
 // Servo controls
 ServoControl servoControls[NUM_LIMBS] = {
-    ServoControl(24, 0, 90),
-    ServoControl(25, 0, 90),
-    ServoControl(26, 0, 90),
-    ServoControl(27, 0, 90),
+    ServoControl(24, 90, 0),
+    ServoControl(25, 90, 0),
+    ServoControl(26, 90, 0),
+    ServoControl(27, 90, 0),
 };
 
 // LED control
@@ -116,7 +116,7 @@ void loop()
 {
   beatDetector.BeatDetectorLoop();
 
-  bool beatDetected = beatDetector.highBeat;
+  bool beatDetected = beatDetector.lowBeat;
   // bool beatDetected = false;
   int_least32_t now = millis();
 
